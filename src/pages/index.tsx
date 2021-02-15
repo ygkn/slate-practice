@@ -1,6 +1,27 @@
-import React, { useMemo, useState, VFC } from 'react';
-import { createEditor, Node } from 'slate';
-import { Editable, Slate, withReact } from 'slate-react';
+import React, { FC, useMemo, useState, VFC } from 'react';
+import { createEditor, Editor, Node, Transforms } from 'slate';
+import { Editable, RenderElementProps, Slate, withReact } from 'slate-react';
+
+const CodeElement: FC<RenderElementProps> = (props) => {
+  return (
+    <pre {...props.attributes}>
+      <code>{props.children}</code>
+    </pre>
+  );
+};
+
+const DefaultElement: FC<RenderElementProps> = (props) => {
+  return <p {...props.attributes}>{props.children}</p>;
+};
+
+const renderElement = (props: RenderElementProps): JSX.Element => {
+  switch (props.element.type) {
+    case 'code':
+      return <CodeElement {...props} />;
+    default:
+      return <DefaultElement {...props} />;
+  }
+};
 
 const IndexPage: VFC = () => {
   const editor = useMemo(() => withReact(createEditor()), []);
@@ -17,7 +38,19 @@ const IndexPage: VFC = () => {
       value={value}
       onChange={(newValue) => setValue(newValue)}
     >
-      <Editable />
+      <Editable
+        renderElement={renderElement}
+        onKeyDown={(event) => {
+          if (event.key === '`' && event.ctrlKey) {
+            event.preventDefault();
+            Transforms.setNodes(
+              editor,
+              { type: 'code' },
+              { match: (n) => Editor.isBlock(editor, n) }
+            );
+          }
+        }}
+      />
     </Slate>
   );
 };
